@@ -7,6 +7,7 @@ contract Harberger is Context {
     address public landlord;
     uint256 public taxNumerator;
     uint256 public taxDenominator;
+    uint8 public maxParcels;
 
     struct Parcel {
         address owner;
@@ -25,10 +26,22 @@ contract Harberger is Context {
         _;
     }
 
-    constructor() {}
+    constructor(address _landlord, uint8 _maxParcels, uint _taxNumerator, uint _taxDenominator) {
+        require(_landlord != address(0), "Harberger: landlord is the zero address");
+        require(_maxParcels > 0 && _maxParcels <= 100, "Harberger: maxParcels must be greater than 0");
+        require(_taxNumerator > 0 && _taxDenominator > 0, "Harberger: taxNumerator and taxDenominator must be greater than 0");
+
+        landlord = _landlord;
+        maxParcels = _maxParcels;
+        taxNumerator = _taxNumerator;
+        taxDenominator = _taxDenominator;
+    }
 
     //for buying a parcel with no owner
-    function buyParcel() public payable {}
+    function buyParcel(uint8 parcelIndex) public payable {
+        // Check if parcelIndex can be input as negative number bc if uint always truncates to 0 then we can remove this check
+        require(parcelIndex >= 0 && parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
+    }
 
     //for setting the price for an owned parcel
     function setParcelPrice(Parcel memory parcel) public onlyParcelOwner(parcel) {}
