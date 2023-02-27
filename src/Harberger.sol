@@ -46,7 +46,7 @@ contract Harberger is Context {
     }
 
     //for buying a parcel with no owner
-    function buyParcel(uint8 parcelIndex) public payable onlyValidIndex(parcelIndex) {
+    function buyParcel(uint8 parcelIndex, uint price) public payable onlyValidIndex(parcelIndex) {
         Parcel storage parcel = parcels[parcelIndex];
         
         require(parcel.owner == address(0), "Harberger: parcel is already owned");
@@ -55,13 +55,6 @@ contract Harberger is Context {
         parcel.owner = _msgSender();
         parcel.lastPaid = block.timestamp;
         parcel.equity = msg.value;
-    }
-
-    //for setting the price for an owned parcel
-    function setParcelPrice(uint8 parcelIndex, uint price) public onlyParcelOwner(parcelIndex) {
-        require(parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
-        Parcel storage parcel = parcels[parcelIndex];
-
         parcel.price = price;
     }
 
