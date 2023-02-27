@@ -8,6 +8,8 @@ contract Harberger is Context {
     uint256 public taxNumerator;
     uint256 public taxDenominator;
     uint8 public maxParcels;
+    
+    Parcel[100] public parcels;
 
     struct Parcel {
         address owner;
@@ -21,7 +23,8 @@ contract Harberger is Context {
         _;
     }
 
-    modifier onlyParcelOwner(Parcel memory parcel) {
+    modifier onlyParcelOwner(uint8 parcelIndexl) {
+        Parcel storage parcel = parcels[parcelIndex];
         require(_msgSender() == parcel.owner, "Harberger: caller is not the parcel owner");
         _;
     }
@@ -39,12 +42,19 @@ contract Harberger is Context {
 
     //for buying a parcel with no owner
     function buyParcel(uint8 parcelIndex) public payable {
-        // Check if parcelIndex can be input as negative number bc if uint always truncates to 0 then we can remove this check
-        require(parcelIndex >= 0 && parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
+        require(parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
+        Parcel storage parcel = parcels[parcelIndex];
+        
+        require(parcel.owner == address(0), "Harberger: parcel is already owned");
+        require(msg.value >= parcel.price, "Harberger: msg.value does not match parcel price");
+
+        parcel.owner = _msgSender();
+        parcel.lastPaid = block.timestamp;
+        parcel.equity = msg.value;
     }
 
     //for setting the price for an owned parcel
-    function setParcelPrice(Parcel memory parcel) public onlyParcelOwner(parcel) {}
+    function setParcelPrice(uint8 parcelIndex) public onlyParcelOwner(parcelIndex) {}
 
     //for determining the amount of taxes owed for a particular parcel
     function taxesDue() public view {}
