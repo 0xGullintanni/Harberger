@@ -88,13 +88,12 @@ contract Harberger is Context {
         require(parcel.equity >= taxDue, "Harberger: equity is less than tax due");
 
         uint equity = parcel.equity;
-        uint taxPayment = equity - taxDue;
-        equity = equity - taxPayment;
+        uint equityAfterTaxPayment = equity - taxDue;
         parcel.equity = 0;
 
-        payable(address(this)).transfer(taxPayment);
+        payable(address(this)).transfer(taxDue);
         if(equity > 0) {
-            payable(_msgSender()).transfer(equity);
+            payable(_msgSender()).transfer(equityAfterTaxPayment);
         } 
     }
 
@@ -105,12 +104,12 @@ contract Harberger is Context {
 
         uint256 equity = parcel.equity;
         parcel.equity = 0;
-        payable(parcel.owner).transfer(equity);
-
         parcel.owner = _msgSender();
         parcel.lastPaid = block.timestamp;
         parcel.equity = msg.value;
         parcel.price = price;
+
+        payable(parcel.owner).transfer(equity);
     }
 
     //for collecting taxes by withdrawing equity from parcel
