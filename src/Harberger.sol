@@ -18,12 +18,17 @@ contract Harberger is Context {
         uint256 lastPaid;
     }
 
+    modifier onlyValidIndex(uint8 parcelIndex) {
+        require(parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
+        _;
+    }
+
     modifier onlyLandlord() {
         require(_msgSender() == landlord, "Harberger: caller is not the landlord");
         _;
     }
 
-    modifier onlyParcelOwner(uint8 parcelIndexl) {
+    modifier onlyParcelOwner(uint8 parcelIndex) {
         Parcel storage parcel = parcels[parcelIndex];
         require(_msgSender() == parcel.owner, "Harberger: caller is not the parcel owner");
         _;
@@ -41,8 +46,7 @@ contract Harberger is Context {
     }
 
     //for buying a parcel with no owner
-    function buyParcel(uint8 parcelIndex) public payable {
-        require(parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
+    function buyParcel(uint8 parcelIndex) public payable onlyValidIndex(parcelIndex) {
         Parcel storage parcel = parcels[parcelIndex];
         
         require(parcel.owner == address(0), "Harberger: parcel is already owned");
@@ -54,27 +58,96 @@ contract Harberger is Context {
     }
 
     //for setting the price for an owned parcel
-    function setParcelPrice(uint8 parcelIndex) public onlyParcelOwner(parcelIndex) {}
+    function setParcelPrice(uint8 parcelIndex, uint price) public onlyParcelOwner(parcelIndex) {
+        require(parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
+        Parcel storage parcel = parcels[parcelIndex];
+
+        parcel.price = price;
+    }
 
     //for determining the amount of taxes owed for a particular parcel
-    function taxesDue() public view {}
+    function taxesDue(uint8 parcelIndex) public view onlyValidIndex(parcelIndex) returns (uint256){
+        require(parcelIndex < maxParcels, "Harberger: parcelIndex is out of bounds");
+        Parcel storage parcel = parcels[parcelIndex];
+
+        uint256 timePassed = (block.timestamp - parcel.lastPaid) / 1 days;
+        uint256 taxDue = (parcel.price * timePassed * taxNumerator) / taxDenominator;
+
+        return taxDue;
+    }
 
     //for depositing funds to pay taxes
-    function depositEquity(Parcel memory parcel) public payable onlyParcelOwner(parcel) {}
+    function depositEquity(uint8 parcelIndex) public payable onlyValidIndex(parcelIndex) {
+        Parcel storage parcel = parcels[parcelIndex];
+        parcel.equity += msg.value;
+
+        uint taxDue = taxesDue(parcelIndex);
+        if(msg.value >= taxDue) {
+            parcel.lastPaid = block.timestamp;
+        }
+    }
 
     //for withdrawing funds from a parcel
-    function withdrawEquity(Parcel memory parcel) public onlyParcelOwner(parcel) {}
+    function withdrawEquity(uint8 parcelIndex) public onlyParcelOwner(parcelIndex) {
+        Parcel storage parcel = parcels[parcelIndex];
+        uint256 equity = parcel.equity;
+        parcel.equity = 0;
+
+        payable(_msgSender()).transfer(equity);
+    }
 
     //for transfering ownership of a parcel
-    function transferParcel() public {}
+    function transferParcel(uint8 parcelIndex, uint price) public payable onlyValidIndex(parcelIndex) {
+        Parcel storage parcel = parcels[parcelIndex];
+        require(msg.value >= parcel.price, "Harberger: msg.value does not match parcel price");
+
+        uint256 equity = parcel.equity;
+        parcel.equity = 0;
+        payable(parcel.owner).transfer(equity);
+
+        parcel.owner = _msgSender();
+        parcel.lastPaid = block.timestamp;
+        parcel.equity = msg.value;
+        parcel.price = price;
+    }
 
     //for collecting taxes by withdrawing equity from parcel
-    function collectTaxes() public onlyLandlord {}
+    function collectTaxes() public onlyLandlord {
+        for(uint8 i = 0; i < maxParcels; i++) {
+            Parcel storage parcel = parcels[i];
+            uint256 taxDue = taxesDue(i);
+            if(parcel.equity >= taxDue) {
+                parcel.equity -= taxDue;
+                parcel.lastPaid = block.timestamp;
+                payable(address(this)).transfer(taxDue);
+            } else {
+                foreCloseIfPossible(i);
+            }
+        }
+    }
 
     //for closing out a parcel if it has no equity
-    function foreCloseIfPossible() public onlyLandlord {}
+    function foreCloseIfPossible(uint8 parcelIndex) public onlyValidIndex(parcelIndex) {
+        Parcel storage parcel = parcels[parcelIndex];
+        uint equity = parcel.equity;
+
+        parcel.owner = address(0);
+        parcel.price = 0;
+        parcel.lastPaid = 0;
+        parcel.equity = 0;
+
+        payable(address(this)).transfer(equity);
+    }
 
     //for getting a particular parcel
-    function getParcel() public view {}
+    function getParcel(uint8 parcelIndex) public view onlyValidIndex(parcelIndex) returns (Parcel memory) {
+        Parcel storage parcel = parcels[parcelIndex];
+        
+        return parcel;
+    }
+
+    function withdraw() public onlyLandlord {
+        payable(landlord).transfer(address(this).balance);
+    }
 
 }
