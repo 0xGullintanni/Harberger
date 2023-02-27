@@ -83,10 +83,19 @@ contract Harberger is Context {
     //for withdrawing funds from a parcel
     function withdrawEquity(uint8 parcelIndex) public onlyParcelOwner(parcelIndex) {
         Parcel storage parcel = parcels[parcelIndex];
-        uint256 equity = parcel.equity;
+
+        uint taxDue = taxesDue(parcelIndex);
+        require(parcel.equity >= taxDue, "Harberger: equity is less than tax due");
+
+        uint equity = parcel.equity;
+        uint taxPayment = equity - taxDue;
+        equity = equity - taxPayment;
         parcel.equity = 0;
 
-        payable(_msgSender()).transfer(equity);
+        payable(address(this)).transfer(taxPayment);
+        if(equity > 0) {
+            payable(_msgSender()).transfer(equity);
+        } 
     }
 
     //for transfering ownership of a parcel
