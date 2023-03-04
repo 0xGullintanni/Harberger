@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import { Context } from './Context.sol';
+import { ERC721 } from './ERC721.sol';
 
-contract Harberger is Context {
+contract Harberger is ERC721 {
     address public landlord;
     uint256 public taxNumerator;
     uint256 public taxDenominator;
@@ -150,5 +150,4 @@ contract Harberger is Context {
     function withdraw() public onlyLandlord {
         payable(landlord).transfer(address(this).balance);
     }
-
 }

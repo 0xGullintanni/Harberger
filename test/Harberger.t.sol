@@ -107,4 +107,11 @@ contract HarbergerTest is Test {
         assertEq(parcelAfterDeposit.lastPaid, parcelBeforeDeposit.lastPaid);
    }
 
+   function testWithdrawEtherBeforeTaxesDue() public {
+         vm.prank(alice);
+        harberger.buyParcel{value: 1 ether }(0, 5 ether);
+
+        
+   }
+
 }
