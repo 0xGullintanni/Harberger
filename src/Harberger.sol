@@ -7,7 +7,6 @@ contract Harberger is ERC721 {
     address public landlord;
     uint256 public taxNumerator;
     uint256 public taxDenominator;
-    uint8 public maxParcels;
     
     Parcel[100] public parcels;
 
@@ -34,13 +33,12 @@ contract Harberger is ERC721 {
         _;
     }
 
-    constructor(address _landlord, uint8 _maxParcels, uint _taxNumerator, uint _taxDenominator) {
+    constructor(address _landlord, uint _taxNumerator, uint _taxDenominator) {
         require(_landlord != address(0), "Harberger: landlord is the zero address");
         require(_maxParcels > 0 && _maxParcels <= 100, "Harberger: maxParcels must be greater than 0");
         require(_taxNumerator > 0 && _taxDenominator > 0, "Harberger: taxNumerator and taxDenominator must be greater than 0");
 
         landlord = _landlord;
-        maxParcels = _maxParcels;
         taxNumerator = _taxNumerator;
         taxDenominator = _taxDenominator;
     }
